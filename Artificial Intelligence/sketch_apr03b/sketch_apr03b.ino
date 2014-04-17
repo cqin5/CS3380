@@ -13,6 +13,9 @@ boolean valveOpen = false;
 int height = 0;  // current height of the balloon relative to the ground
 int minSpeed = 70;
 int maxSpeed = 500;
+int offset = 30;
+boolean direction = false;
+
 
 void setup() {
   // SETUP MOTORS
@@ -64,15 +67,17 @@ void fill() {
 }
 
 void launch() {
-  Serial.println("Preparing to launch....");
-  while (height <= 30) {
-     delay(1000);  // junk code
+  while (height != 0) {
+    
+    if (height < 0.02) {  // stops motors if height is less than 70m altitude
+      firstESC.write(0);
+      secondESC.write(0);
+    }
+    else {  // runs when drone is 70m+ altitude
+      fixOrientation(); 
+      fixDisplacement();
+    } 
   }
-  
-  while (height > 30) {  // turns on the motor once it has reached 30m above ground
-     fixOrientation(); 
-     fixDisplacement();
-    }  
 }
 
 
@@ -126,19 +131,29 @@ void fixOrientation() {
     firstESC.write(0);  // tests fan blades
     secondESC.write(540);  // tests fan blades 
   }
-   firstESC.write(0);  // tests fan blades
-   secondESC.write(0);  // tests fan blades  
+  // if the drone is between both offsets, turn off the blades  
+  // firstESC.write(0);  // tests fan blades
+  // secondESC.write(0);  // tests fan blades 
+}
+
+
+void checkOrientation() {
+  if (offset - desiredBearing <= currentBearing <= offset + desiredBearing) {
+    direction = true;
+  }
+  else {
+    direction = false;
+  } 
 }
 
 void fixDisplacement() {
-  // Fixes the displacement of the drone if it's off by a displacement of 20m
-  while (displacement > 10 && orientation is fine) {  // displacement is greater than 10km
+  // Fixes the displacement of the drone if it's off by a displacement of 2km
+  while (displacement > 2 && direction == true) {  // displacement is greater than 10km
     firstESC.write(540);  
     secondESC.write(540);
+    checkOrientation();
   }
-  
-  
-  // exits method if the orientation of the drone is off by 30 degrees
+  // exits method if the direction of the drone is no longer true
 }
 
 
