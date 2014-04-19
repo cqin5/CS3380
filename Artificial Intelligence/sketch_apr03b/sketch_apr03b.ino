@@ -15,6 +15,7 @@ int minSpeed = 70;
 int maxSpeed = 500;
 int offset = 30;
 boolean direction = false;
+int flightDuration = 0;
 
 
 void setup() {
@@ -47,8 +48,7 @@ void idle() {
    Serial.println("Idle Mode"); 
 }
 
-void test() {
-  
+void test() {  
     Serial.println("Entering Testing Mode ...");
     Serial.println("Step back!");
     delay(3000);
@@ -60,6 +60,15 @@ void test() {
     value = 0;  // Brings the program back to Idle Mode
 }
 
+/*
+void land() {
+ // open the valve
+  valveSwitch();
+ 
+  
+}
+*/
+
 
 /*
 void launch() {
@@ -69,17 +78,19 @@ void launch() {
       firstESC.write(0);
       secondESC.write(0);
     }
+    else if (flightDuration > 7200 && altitude < 18000) {  // lands if below 18km
+      land();
+    }
     else {  // runs when drone is 70m+ altitude
-      fixOrientation(); 
-      fixDisplacement();
+      fly(); 
     } 
   }
 }
 */
 
-/**
-opens or closes the valve based on its current position
-*/
+
+// opens or closes the valve based on its current position
+
 void valveSwitch()
 {
   if(valveOpen == false)
@@ -92,7 +103,7 @@ void valveSwitch()
     //black wire
     digitalWrite(11,HIGH);
     delay(500);
-    ///digitalWrite(11,LOW);
+    //digitalWrite(11,LOW);
     Serial.println("valve is now closed");
   }
   else
@@ -105,13 +116,13 @@ void valveSwitch()
     //red wire
     digitalWrite(12,HIGH);
     delay(500);
-    //digitalWrite(12,LOW);
+   // digitalWrite(12,LOW);
     Serial.println("valve is now open");
   }
 }
 
 /*
-void fixOrientation() {
+void fly() {
   // Fixes orientation if the drone points off the original launch direction by an offset of 35 degrees
   
   //
@@ -125,34 +136,15 @@ void fixOrientation() {
     firstESC.write(0);  // tests fan blades
     secondESC.write(540);  // tests fan blades 
   }
-  // if the drone is between both offsets, turn off the blades  
-  // firstESC.write(0);  // tests fan blades
-  // secondESC.write(0);  // tests fan blades 
+  
+  while (offset - desiredBearing < currentBearing < offset + desiredBearing) {
+    // if the drone is between both offsets, turn the blades on  
+     firstESC.write(540);  // tests fan blades
+     secondESC.write(540);  // tests fan blades 
+  }
 }
 */
 
-/*
-void checkOrientation() {
-  if (offset - desiredBearing <= currentBearing <= offset + desiredBearing) {
-    direction = true;
-  }
-  else {
-    direction = false;
-  } 
-}
-*/
-
-/*
-void fixDisplacement() {
-  // Fixes the displacement of the drone if it's off by a displacement of 2km
-  while (displacement > 2 && direction == true) {  // displacement is greater than 10km
-    firstESC.write(540);  
-    secondESC.write(540);
-    checkOrientation();
-  }
-  // exits method if the direction of the drone is no longer true
-}
-*/
 
 void loop() {
 
@@ -161,6 +153,8 @@ void loop() {
   firstESC.write(value);
   secondESC.write(value);
   Serial.println(value);
+  delay(1000);
+  flightDuration++;
  
   if(Serial.available()) 
   {
@@ -191,5 +185,4 @@ void loop() {
       value = 0;
     }
   }
-  delay(2000);
 }
