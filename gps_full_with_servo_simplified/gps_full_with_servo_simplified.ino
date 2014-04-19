@@ -41,8 +41,8 @@ int maxSpeed = 500;
 #define ACCELE_SCALE 2  // accelerometer full-scale, should be 2, 4, or 8
 
 /* LSM303 Address definitions */
-#define LSM303_MAG  0x1E  // assuming SA0 grounded
-#define LSM303_ACC  0x18  // assuming SA0 grounded
+#define 0x1E    // assuming SA0 grounded
+#define 0x18    // assuming SA0 grounded
 
 #define X 0
 #define Y 1
@@ -50,30 +50,30 @@ int maxSpeed = 500;
 
 
 
-#define INT1_CFG_A 0x30
-#define INT1_SOURCE_A 0x31
-#define INT1_THS_A 0x32
-#define INT1_DURATION_A 0x33
-#define CRA_REG_M 0x00
-#define CRB_REG_M 0x01//refer to the Table 58 of the datasheet of LSM303DLM
-	#define MAG_SCALE_1_3 0x20//full-scale is +/-1.3Gauss
-	#define MAG_SCALE_1_9 0x40//+/-1.9Gauss
-	#define MAG_SCALE_2_5 0x60//+/-2.5Gauss
-	#define MAG_SCALE_4_0 0x80//+/-4.0Gauss
-	#define MAG_SCALE_4_7 0xa0//+/-4.7Gauss
-	#define MAG_SCALE_5_6 0xc0//+/-5.6Gauss
-	#define MAG_SCALE_8_1 0xe0//+/-8.1Gauss
-#define MR_REG_M 0x02
-#define OUT_X_H_M 0x03
-#define OUT_X_L_M 0x04
-#define OUT_Y_H_M 0x07
-#define OUT_Y_L_M 0x08
-#define OUT_Z_H_M 0x05
-#define OUT_Z_L_M 0x06
-#define SR_REG_M 0x09
-#define IRA_REG_M 0x0A
-#define IRB_REG_M 0x0B
-#define IRC_REG_M 0x0C
+#define 0x30
+#define 0x31
+#define 0x32
+#define 0x33
+#define 0x00
+#define 0x01 //refer to the Table 58 of the datasheet of LSM303DLM
+	#define 0x20 //full-scale is +/-1.3Gauss
+	#define 0x40 //+/-1.9Gauss
+	#define 0x60 //+/-2.5Gauss
+	#define 0x80 //+/-4.0Gauss
+	#define 0xa0 //+/-4.7Gauss
+	#define 0xc0 //+/-5.6Gauss
+	#define 0xe0 //+/-8.1Gauss
+#define 0x02
+#define 0x03
+#define 0x04
+#define 0x07
+#define 0x08
+#define 0x05
+#define 0x06
+#define 0x09 
+#define 0x0A 
+#define 0x0B 
+#define 0x0C
 /* Compass init. end */
 
 
@@ -375,9 +375,9 @@ void loop() {
   /* End of Servo code */
   
  
-  while(!(LSM303_read(SR_REG_M) & 0x01))
+  while(!(LSM303_read(0x09) & 0x01))
     ;  // wait for the magnetometer readings to be ready
-  getLSM303_mag(mag);  // get the magnetometer values, store them in mag
+  get0x1E(mag);  // get the magnetometer values, store them in mag
   
   Serial.print("A: ");
   Serial.println(getHeading(mag), 3); // this only works if the sensor is level
@@ -528,9 +528,9 @@ void initLSM303(int fs)
     LSM303_write((0x00 | (fs-fs/2-1)<<4), 0x23);  // set full-scale
   else
     LSM303_write(0x00, 0x23);
-  LSM303_write(0x14, CRA_REG_M);  // 0x14 = mag 30Hz output rate
-  LSM303_write(MAG_SCALE_1_3, CRB_REG_M); //magnetic scale = +/-1.3Gauss
-  LSM303_write(0x00, MR_REG_M);  // 0x00 = continouous conversion mode
+  LSM303_write(0x14, 0x00);  // 0x14 = mag 30Hz output rate
+  LSM303_write(0x20, 0x01); //magnetic scale = +/-1.3Gauss
+  LSM303_write(0x00, 0x02);  // 0x00 = continouous conversion mode
 }
 
 /********************************************************************/
@@ -550,12 +550,12 @@ float getHeading(int * magValue)
 
 
 
-void getLSM303_mag(int * rawValues)
+void get0x1E(int * rawValues)
 {
-  Wire.beginTransmission(LSM303_MAG);
-  Wire.write(OUT_X_H_M);
+  Wire.beginTransmission(0x1E);
+  Wire.write(0x03);
   Wire.endTransmission();
-  Wire.requestFrom(LSM303_MAG, 6);
+  Wire.requestFrom(0x1E, 6);
   for (int i=0; i<3; i++)
     rawValues[i] = (Wire.read() << 8) | Wire.read();
   int temp;
@@ -570,16 +570,16 @@ byte LSM303_read(byte address)
   byte temp;
   
   if (address >= 0x20)
-    Wire.beginTransmission(LSM303_ACC);
+    Wire.beginTransmission(0x18);
   else
-    Wire.beginTransmission(LSM303_MAG);
+    Wire.beginTransmission(0x1E);
     
   Wire.write(address);
   
   if (address >= 0x20)
-    Wire.requestFrom(LSM303_ACC, 1);
+    Wire.requestFrom(0x18, 1);
   else
-    Wire.requestFrom(LSM303_MAG, 1);
+    Wire.requestFrom(0x1E, 1);
   while(!Wire.available())
     ;
   temp = Wire.read();
@@ -593,9 +593,9 @@ byte LSM303_read(byte address)
 void LSM303_write(byte data, byte address)
 {
   if (address >= 0x20)
-    Wire.beginTransmission(LSM303_ACC);
+    Wire.beginTransmission(0x18);
   else
-    Wire.beginTransmission(LSM303_MAG);
+    Wire.beginTransmission(0x1E);
     
   Wire.write(address);
   Wire.write(data);
