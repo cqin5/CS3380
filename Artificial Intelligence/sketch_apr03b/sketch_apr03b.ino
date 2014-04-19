@@ -28,11 +28,10 @@ void setup() {
   secondESC.write(1023);
  
   // SETUP VALVE
-  pinMode(13,OUTPUT);
-  digitalWrite(13,LOW);
-  //HBridge on/off
-  pinMode(10,OUTPUT);
-  digitalWrite(10,HIGH);
+  // blink light
+  //pinMode(13,OUTPUT);
+  //digitalWrite(13,LOW);
+  
   //polarity switch
   pinMode(11,OUTPUT);
   digitalWrite(11,LOW);
@@ -55,17 +54,14 @@ void test() {
     delay(3000);
     firstESC.write(100);  // tests fan blades
     secondESC.write(100);  // tests fan blades
-    delay(1000);
+    delay(9000);
     Serial.println("Exiting Test Mode..");
     delay(3000);
     value = 0;  // Brings the program back to Idle Mode
 }
 
-void fill() {
-  valveSwitch();
-  delay(4000);
-}
 
+/*
 void launch() {
   while (height != 0) {
     
@@ -79,44 +75,42 @@ void launch() {
     } 
   }
 }
-
+*/
 
 /**
 opens or closes the valve based on its current position
 */
 void valveSwitch()
 {
-  if(valveOpen == true)
+  if(valveOpen == false)
   {
     //light off
-    digitalWrite(13,LOW);
+    //digitalWrite(13,LOW);
     
-    valveOpen = false;
     //red wire
     digitalWrite(12,LOW);
     //black wire
     digitalWrite(11,HIGH);
     delay(500);
-    digitalWrite(11,LOW);
+    ///digitalWrite(11,LOW);
     Serial.println("valve is now closed");
   }
   else
   {
     //light on
-    digitalWrite(13,HIGH);
+    //digitalWrite(13,HIGH);
     
-    valveOpen = true;
     //black wire
     digitalWrite(11,LOW);
     //red wire
     digitalWrite(12,HIGH);
     delay(500);
-    digitalWrite(12,LOW);
+    //digitalWrite(12,LOW);
     Serial.println("valve is now open");
   }
 }
 
-
+/*
 void fixOrientation() {
   // Fixes orientation if the drone points off the original launch direction by an offset of 35 degrees
   
@@ -135,8 +129,9 @@ void fixOrientation() {
   // firstESC.write(0);  // tests fan blades
   // secondESC.write(0);  // tests fan blades 
 }
+*/
 
-
+/*
 void checkOrientation() {
   if (offset - desiredBearing <= currentBearing <= offset + desiredBearing) {
     direction = true;
@@ -145,7 +140,9 @@ void checkOrientation() {
     direction = false;
   } 
 }
+*/
 
+/*
 void fixDisplacement() {
   // Fixes the displacement of the drone if it's off by a displacement of 2km
   while (displacement > 2 && direction == true) {  // displacement is greater than 10km
@@ -155,7 +152,7 @@ void fixDisplacement() {
   }
   // exits method if the direction of the drone is no longer true
 }
-
+*/
 
 void loop() {
 
@@ -177,10 +174,18 @@ void loop() {
       test();
     }
     else if (value == 2) {
-      fill();
+      if (valveOpen == true) {
+        valveOpen = false;
+        value = 0; 
+      }
+      else {
+      valveOpen = true;
+      value = 0;
+    } 
+      valveSwitch();
     }
     else if (value == 3) {
-      launch();
+      //launch();
     }
     else {  // random values entered will keep the program in Idle Mode
       value = 0;

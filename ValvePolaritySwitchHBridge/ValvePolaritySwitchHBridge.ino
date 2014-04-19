@@ -1,4 +1,7 @@
+
+
 boolean valveOpen = false;
+int value = 0;
 
 void valveSwitch();
 
@@ -7,11 +10,11 @@ void setup()
   Serial.begin(19200);
   
   //blinking light
-  pinMode(13,OUTPUT);
-  digitalWrite(13,LOW);
+  //pinMode(13,OUTPUT);
+  //digitalWrite(13,LOW);
   //HBridge on/off
-  pinMode(10,OUTPUT);
-  digitalWrite(10,HIGH);
+  //pinMode(10,OUTPUT);
+  //digitalWrite(10,HIGH);
   //polarity switch
   pinMode(11,OUTPUT);
   digitalWrite(11,LOW);
@@ -20,9 +23,21 @@ void setup()
 }
 
 void loop()
-{
-  valveSwitch();
-  delay(10000);
+{  
+   if(Serial.available()) 
+  {
+    value = Serial.parseInt();    // Parse an Integer from Serial
+    Serial.println(value);  //prints value motor set to
+    
+    if (value == 1) {
+      valveOpen = true;
+      valveSwitch();
+    }
+    else {  // random values entered will keep the program in Idle Mode
+      valveOpen = false;
+      valveSwitch();
+    }
+  }
 }
 
 /**
@@ -30,12 +45,11 @@ opens or closes the valve based on its current position
 */
 void valveSwitch()
 {
-  if(valveOpen == true)
+  if(valveOpen == false)
   {
     //light off
-    digitalWrite(13,LOW);
+    //digitalWrite(13,LOW);
     
-    valveOpen = false;
     //red wire
     digitalWrite(12,LOW);
     //black wire
@@ -47,9 +61,8 @@ void valveSwitch()
   else
   {
     //light on
-    digitalWrite(13,HIGH);
+    //digitalWrite(13,HIGH);
     
-    valveOpen = true;
     //black wire
     digitalWrite(11,LOW);
     //red wire
