@@ -77,6 +77,17 @@ float realAccel[3];  // calculated acceleration values here
 float desiredBearing = 0.00;
 float currentBearing = 0.00;
 
+ // Latitude and longitude
+  // latA & lonA is the current coordinates
+  // latB and lonB is the coordinates of where the balloon is expected to land
+  float latA = 0;
+  float lonA = 0;
+  
+  float latB = 43.015277;
+  float lonB = -81.280354;
+  
+   
+
 
 void setup() {
   // SETUP MOTORS
@@ -94,18 +105,9 @@ void setup() {
   pinMode(12,OUTPUT);
   digitalWrite(12,LOW);
   
-  // Latitude and longitude
-  // latA & lonA is the current coordinates
-  // latB and lonB is the coordinates of where the balloon is expected to land
-  float latA = 0;
-  float lonA = 0;
-  
-  float latB = 43.015277;
-  float lonB = -81.280354;
-  
   // Compass code
-   Wire.begin();  // Start up I2C, required for LSM303 communication
-  initLSM303(ACCELE_SCALE);  // Initialize the LSM303, using a SCALE full-scale range 
+   //Wire.begin();  // Start up I2C, required for LSM303 communication
+  //initLSM303(ACCELE_SCALE);  // Initialize the LSM303, using a SCALE full-scale range 
 }
 
 
@@ -139,6 +141,7 @@ void printValues(int * magArray, int * accelArray)
   Serial.print(magArray[Z], DEC);
   Serial.println();
 }
+
 float getHeading(int * magValue)
 {
   // see section 1.2 in app note AN3192
@@ -223,7 +226,6 @@ void LSM303_write(byte data, byte address)
   Wire.endTransmission();
 }
 
-
 void idle() {
    Serial.println("Idle Mode"); 
 }
@@ -240,17 +242,16 @@ void test() {
     value = 0;  // Brings the program back to Idle Mode
 }
 
-/*
+
 void land() {
  // open the valve
   valveSwitch();
- 
-  
 }
-*/
+
 
 void getLocation() {
-  Wire.requestFrom(2,9);    // request 6 bytes from slave device #2
+  Serial.println("lggdolllll");
+  Wire.requestFrom(2,8);    // request 6 bytes from slave device #2
 
   /*
   while(Wire.available())    // slave may send less than requested
@@ -260,13 +261,38 @@ void getLocation() {
   } 
   */
   
-  char c = Wire.read();
+  char coord[8] = {};
   
-  if ( 
+  for (int i = 0; i <= ; i++) {
+    char c = Wire.read();
+    Serial.println(c);
+    
+    if ( 48 <= (int)c <= 57) {
+      coord[i] = c;
+
+    }
+    else {
+      latA = 9999.00;
+      Serial.println("lol");
+      return;  // exits the method if an error has occured
+    }
+  } 
+  //latA = stoi( coord[0] + coord[1] + coord[2] + coord[3] );
+  //lonA = stoi( coord[4] + coord[5] + coord[6] + coord[7] );
+  latA = (((int)coord[0] - 48) * 1000) + (((int)coord[1] - 48) * 100) + (((int)coord[2] - 48) * 10) + (((int)coord[3] - 48) * 1);
+  latB = (((int)coord[4] - 48) * 1000) + (((int)coord[5] - 48) * 100) + (((int)coord[6] - 48) * 10) + (((int)coord[7] - 48) * 1);
   
+  //latA = (int)( coord[0] + coord[1] + coord[2] + coord[3] );
+  //lonA = (int)( coord[4] + coord[5] + coord[6] + coord[7] );
+  
+  // converts lon and lat to 0 - 90 scale
+  latA = latA / 100;  
+  lonA = lonA / 100;
+  Serial.println(latA);
+  Serial.println(lonA);
 }
 
-
+/*
 void launch() {
   while (height != 0) {
     
@@ -282,6 +308,7 @@ void launch() {
     } 
   }
 }
+*/
 
 
 
@@ -319,6 +346,12 @@ void valveSwitch()
 
 
 void getBearing() {
+ 
+  getLocation();
+  while ( latA == 9999.00 ) {  // calls getLocation() again if it was unable to previously
+    getLocation();    
+  }
+  
   /* This is the formula to calculate the desired bearing based on current position and desired position
    Δφ = ln( tan( latB / 2 + π / 4 ) / tan( latA / 2 + π / 4) ) 
   Δlon = abs( lonA - lonB ) 
@@ -326,8 +359,8 @@ void getBearing() {
 
   Note: 1) ln = natural log      2) if Δlon > 180°  then   Δlon = Δlon (mod 180).
  */ 
- deltaPi = log( tan( latB / 2 + PI /4 ) / tan( latA / 2 + PI / 4 ));
- deltaLon = abs( lonA - lonB );
+ int deltaPi = log( tan( latB / 2 + PI /4 ) / tan( latA / 2 + PI / 4 ));
+ int deltaLon = abs( lonA - lonB );
  
  if ( deltaLon > 180 ) {
    deltaLon = deltaLon % 180;
@@ -337,7 +370,7 @@ void getBearing() {
 }
 
 
-
+/*
 void fly() {
   // Gets the desired bearing
   getBearing();
@@ -360,6 +393,7 @@ void fly() {
      secondESC.write(540);  // tests fan blades 
   }
 }
+*/
 
 
 
@@ -371,10 +405,11 @@ void loop() {
   secondESC.write(value);
   Serial.println(value);
   delay(1000);
-  flightDuration++;
+  //flightDuration++;
  
 
  /** Compass code **/
+ /*
  Serial.println("**************");
   getLSM303_accel(accel);  // get the acceleration values and store them in the accel array
   while(!(LSM303_read(SR_REG_M) & 0x01))
@@ -391,7 +426,7 @@ void loop() {
   /* print both the level, and tilt-compensated headings below to compare */
   //Serial.println("The clockwise angle between the magnetic north and x-axis: ");
   //Serial.print(getHeading(mag), 3); // this only works if the sensor is level
-  currentBearing = getHeading(mag);
+  //currentBearing = getHeading(mag);
   
   //Serial.println(" degrees");
   //Serial.print("The clockwise angle between the magnetic north and the projection");
@@ -411,6 +446,7 @@ void loop() {
     
     if (value == 0) {
       idle();
+      getLocation();
     }
     else if (value == 1) {
       test();
@@ -424,7 +460,7 @@ void loop() {
       valveOpen = true;
       value = 0;
     } 
-      valveSwitch();
+       valveSwitch();
     }
     else if (value == 3) {
       //launch();
