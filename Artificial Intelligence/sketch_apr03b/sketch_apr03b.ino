@@ -80,14 +80,20 @@ float currentBearing = 0.00;
  // Latitude and longitude
   // latA & lonA is the current coordinates
   // latB and lonB is the coordinates of where the balloon is expected to land
-  float latA = 0;
-  float lonA = 0;
+  float latA = 0.00;
+  float lonA = 0.00;
   
   float latB = 43.015277;
   float lonB = -81.280354;
   
+  float altitude = 0.00;
+  
+  // start time 
+  uint32_t startTime = 0;
    
-
+  // current time
+  uint32_t currentTime = 0;
+   
 
 void setup() {
   // SETUP MOTORS
@@ -233,10 +239,10 @@ void idle() {
 void test() {  
     Serial.println("Entering Testing Mode ...");
     Serial.println("Step back!");
-    delay(9000);
+    delay(2000);
     firstESC.write(70);  // tests fan blades
     secondESC.write(70);  // tests fan blades
-    delay(180000);
+    delay(8000);
     Serial.println("Exiting Test Mode..");
     delay(3000);
     value = 0;  // Brings the program back to Idle Mode
@@ -250,47 +256,74 @@ void land() {
 
 
 void getLocation() {
+ boolean locFix = false;
+ boolean gibberish = false;
+ boolean readFin = false;
+ char coord[13] = {};
+ int i = 0;
+ 
   Serial.println("lggdolllll");
-  Wire.requestFrom(2,8);    // request 6 bytes from slave device #2
-
-  /*
-  while(Wire.available())    // slave may send less than requested
+  Wire.requestFrom(16,16);    // request 16 bytes from slave device #16
+   Serial.println("enters wire");
+  
+  while(Wire.available() && gibberish == false && readFin == false)    // slave may send less than requested
   { 
     char c = Wire.read(); // receive a byte as character
-    Serial.print(c);         // print the character   
-  } 
-  */
-  
-  char coord[8] = {};
-  
-  for (int i = 0; i <= ; i++) {
-    char c = Wire.read();
-    Serial.println(c);
     
     if ( 48 <= (int)c <= 57) {
+      Serial.println(c);
       coord[i] = c;
-
+    }
+    else if (c == '\n') {
+      readFin = true;
     }
     else {
-      latA = 9999.00;
       Serial.println("lol");
-      return;  // exits the method if an error has occured
-    }
+      gibberish = true;
+      latA = 9999.00;
+      return;
+    } 
+    i++;    
   } 
   //latA = stoi( coord[0] + coord[1] + coord[2] + coord[3] );
   //lonA = stoi( coord[4] + coord[5] + coord[6] + coord[7] );
-  latA = (((int)coord[0] - 48) * 1000) + (((int)coord[1] - 48) * 100) + (((int)coord[2] - 48) * 10) + (((int)coord[3] - 48) * 1);
-  latB = (((int)coord[4] - 48) * 1000) + (((int)coord[5] - 48) * 100) + (((int)coord[6] - 48) * 10) + (((int)coord[7] - 48) * 1);
+  latA = (((float)coord[0] - 48) * 1000) + (((float)coord[1] - 48) * 100) + (((float)coord[2] - 48) * 10) + (((float)coord[3] - 48) * 1);
+  lonA = (((float)coord[4] - 48) * 1000) + (((float)coord[5] - 48) * 100) + (((float)coord[6] - 48) * 10) + (((float)coord[7] - 48) * 1);
+  
+  //int altSize = sizeof(alt);
   
   //latA = (int)( coord[0] + coord[1] + coord[2] + coord[3] );
   //lonA = (int)( coord[4] + coord[5] + coord[6] + coord[7] );
   
   // converts lon and lat to 0 - 90 scale
   latA = latA / 100;  
-  lonA = lonA / 100;
+  lonA = lonA / (-100);
   Serial.println(latA);
   Serial.println(lonA);
 }
+
+/*
+void vent() {
+
+  while (altitude >= 24000) {
+    // Opens the valve 
+   //black wire
+    digitalWrite(11,LOW);
+    //red wire
+    digitalWrite(12,HIGH);
+    delay(500);
+    digitalWrite(12,LOW); 
+  }
+  
+  // Closes the valve 
+   //red wire
+    digitalWrite(12,LOW);
+    //black wire
+    digitalWrite(11,HIGH);
+    delay(500);
+    digitalWrite(11,LOW);
+}
+*/
 
 /*
 void launch() {
@@ -300,7 +333,13 @@ void launch() {
       firstESC.write(0);
       secondESC.write(0);
     }
-    else if (flightDuration > 7200 && altitude < 18000) {  // lands if below 18km
+    else if ((currentTime - startTime)/1000 > 7200 && altitude < 18000) {  // lands if below 18km
+      land();
+    }
+    else if (altitude > 24000) {
+       vent();
+    }
+    else if ((currentTime - startTime) / 1000 > 10800) {
       land();
     }
     else {  // runs when drone is 70m+ altitude
@@ -311,6 +350,17 @@ void launch() {
 */
 
 
+/**
+Method to get the current time and print it
+*/
+uint32_t GetCurrentTime()
+{
+     // log milliseconds since starting
+    uint32_t time = millis();
+    Serial.print("Millis since start: ");
+    Serial.println(currentTime); // milliseconds since start
+    return time;
+}
 
 // opens or closes the valve based on its current position
 
@@ -318,28 +368,22 @@ void valveSwitch()
 {
   if(valveOpen == false)
   {
-    //light off
-    //digitalWrite(13,LOW);
-    
     //red wire
     digitalWrite(12,LOW);
     //black wire
     digitalWrite(11,HIGH);
     delay(500);
-    //digitalWrite(11,LOW);
+    digitalWrite(11,LOW);
     Serial.println("valve is now closed");
   }
   else
   {
-    //light on
-    //digitalWrite(13,HIGH);
-    
     //black wire
     digitalWrite(11,LOW);
     //red wire
     digitalWrite(12,HIGH);
     delay(500);
-   // digitalWrite(12,LOW);
+    digitalWrite(12,LOW);
     Serial.println("valve is now open");
   }
 }
@@ -364,13 +408,12 @@ void getBearing() {
  
  if ( deltaLon > 180 ) {
    deltaLon = deltaLon % 180;
- }
-  
+ }  
   desiredBearing = atan2( deltaLon , deltaPi );
 }
 
 
-/*
+
 void fly() {
   // Gets the desired bearing
   getBearing();
@@ -393,7 +436,7 @@ void fly() {
      secondESC.write(540);  // tests fan blades 
   }
 }
-*/
+
 
 
 
@@ -404,10 +447,8 @@ void loop() {
   firstESC.write(value);
   secondESC.write(value);
   Serial.println(value);
-  delay(1000);
-  //flightDuration++;
- 
 
+  delay(3000);
  /** Compass code **/
  /*
  Serial.println("**************");
@@ -446,6 +487,7 @@ void loop() {
     
     if (value == 0) {
       idle();
+      Serial.println(GetCurrentTime());
       getLocation();
     }
     else if (value == 1) {
@@ -463,6 +505,7 @@ void loop() {
        valveSwitch();
     }
     else if (value == 3) {
+      startTime = GetCurrentTime();       
       //launch();
     }
     else {  // random values entered will keep the program in Idle Mode
